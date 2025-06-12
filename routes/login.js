@@ -9,11 +9,8 @@ const db = require('../db');
 
 
 router.post('/login', async (req, res) => {
-
-
   const { userId, password } = req.body;
-
-  const [rows] = await db.query('SELECT staff_id, password FROM staff WHERE staff_id = ? AND designation = ?', [userId, 'HR']);
+  const [rows] = await db.query('SELECT staff_id, password,designation FROM staff WHERE staff_id = ?', [userId]);
   const user = rows[0];
 
   if (!user || !(await bcrypt.compare(password, user.password))) {
@@ -28,7 +25,7 @@ router.post('/login', async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
 
-  res.json({ message: 'Logged in successfully' });
+  res.json({ message: 'Logged in successfully', designation: user.designation });
 });
 
 router.get('/check_session', (req, res) => {
