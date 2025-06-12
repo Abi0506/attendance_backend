@@ -16,7 +16,7 @@ router.post('/login', async (req, res) => {
   if (!user || !(await bcrypt.compare(password, user.password))) {
     return res.status(401).json({ message: 'Invalid credentials' });
   }
-  const token = jwt.sign({ staff_id: user.staff_id, }, SECRET_KEY, { expiresIn: '7d' });
+  const token = jwt.sign({ staff_id: user.staff_id, designation: user.designation }, SECRET_KEY, { expiresIn: '7d' });
 
   res.cookie('token', token, {
     httpOnly: true,
@@ -25,7 +25,7 @@ router.post('/login', async (req, res) => {
     maxAge: 7 * 24 * 60 * 60 * 1000
   });
 
-  res.json({ message: 'Logged in successfully', designation: user.designation });
+  res.json({ message: 'Logged in successfully', designation: user.designation, staff_id: user.staff_id });
 });
 
 router.get('/check_session', (req, res) => {
@@ -45,7 +45,7 @@ router.get('/check_session', (req, res) => {
       sameSite: 'lax'
     });
 
-    const token = jwt.sign({ staff_id: decoded.staff_id }, SECRET_KEY, { expiresIn: '7d' });
+    const token = jwt.sign({ staff_id: decoded.staff_id, designation: decoded.designation }, SECRET_KEY, { expiresIn: '7d' });
 
     res.cookie('token', token, {
       httpOnly: true,
@@ -53,7 +53,7 @@ router.get('/check_session', (req, res) => {
       sameSite: 'lax',
       maxAge: 7 * 24 * 60 * 60 * 1000
     });
-    res.json({ message: 'Valid token' });
+    res.json({ message: 'Valid token', designation: decoded.designation, staff_id: decoded.staff_id });
 
   });
 });
