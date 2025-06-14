@@ -1,7 +1,6 @@
 // app.js
 const express = require("express");
 const cookieParser = require('cookie-parser');
-
 const cors = require("cors");
 const app = express();
 
@@ -18,11 +17,10 @@ app.use(express.json());
 app.use(cookieParser());
 
 
-const mainRouer = require("./routes/main");
+
 const loginRouter = require("./routes/login");
 const attendanceRouter = require("./routes/attendance");
 
-app.use("/", mainRouer);
 app.use("/api", loginRouter);
 app.use("/api", attendanceRouter);
 // const bcrypt = require('bcryptjs');
