@@ -59,10 +59,9 @@ router.post('/attendance_viewer', async (req, res) => {
 
 router.post('/dept_summary', async (req, res) => {
   const [startDate, endDate] = await start_end_time();
-  const { dept } = req.body;
+  const { category, dept } = req.body;
   let rows = [];
   let result = {};
-
 
   function addEntry(category, dept, entry) {
     if (!result[category]) result[category] = {};
@@ -71,7 +70,8 @@ router.post('/dept_summary', async (req, res) => {
   }
 
   try {
-    if (dept === 'ALL') {
+    if (category === 'ALL') {
+      // ALL: group by category and department
       [rows] = await db.query(`
         SELECT staff.staff_id, staff.name, staff.dept, 
                SUM(report.late_mins) AS summary, 
@@ -89,26 +89,52 @@ router.post('/dept_summary', async (req, res) => {
         const [leaves, num1] = absent_marked(summary);
         addEntry(category, dept, { ...rest, summary: num1, leaves, dept });
       }
-    } else if (dept === "Non Teaching Staff" || dept === "Teaching Staff") {
+    } else if (
+      (category === "Teaching Staff" || category === "Non Teaching Staff") &&
+      dept && dept !== "ALL"
+    ) {
+      // Filter by both category and department
       [rows] = await db.query(`
         SELECT staff.staff_id, staff.name, staff.dept, 
-               
                SUM(report.late_mins) AS summary
         FROM report
         JOIN staff ON staff.staff_id = report.staff_id
         JOIN category ON category.category_no = staff.category  
-        WHERE report.date BETWEEN ? AND ? AND category.category_description = ?
-        GROUP BY staff.dept, staff.staff_id, staff.name, category.category_description
+        WHERE report.date BETWEEN ? AND ? 
+          AND category.category_description = ?
+          AND staff.dept = ?
+        GROUP BY staff.dept, staff.staff_id, staff.name
         ORDER BY staff.dept, staff.staff_id
-      `, [startDate, endDate, dept]);
+      `, [startDate, endDate, category, dept]);
 
       for (const row of rows) {
-        const { dept, summary,  ...rest } = row;
+        const { dept, summary, ...rest } = row;
         const [leaves, num1] = absent_marked(summary);
         if (!result[dept]) result[dept] = [];
         result[dept].push({ ...rest, summary: num1, leaves });
       }
-    } else {
+    } else if (category === "Teaching Staff" || category === "Non Teaching Staff") {
+      // Only filter by category
+      [rows] = await db.query(`
+        SELECT staff.staff_id, staff.name, staff.dept, 
+               SUM(report.late_mins) AS summary
+        FROM report
+        JOIN staff ON staff.staff_id = report.staff_id
+        JOIN category ON category.category_no = staff.category  
+        WHERE report.date BETWEEN ? AND ? 
+          AND category.category_description = ?
+        GROUP BY staff.dept, staff.staff_id, staff.name
+        ORDER BY staff.dept, staff.staff_id
+      `, [startDate, endDate, category]);
+
+      for (const row of rows) {
+        const { dept, summary, ...rest } = row;
+        const [leaves, num1] = absent_marked(summary);
+        if (!result[dept]) result[dept] = [];
+        result[dept].push({ ...rest, summary: num1, leaves });
+      }
+    } else if (dept && dept !== "ALL") {
+      // Only filter by department
       [rows] = await db.query(`
         SELECT staff.staff_id, staff.name, staff.dept, 
                SUM(report.late_mins) AS summary
@@ -222,41 +248,5 @@ router.post('/individual_data', async (req, res) => {
   }
 });
 
-router.post('/show_category', async (req, res) => {
-    try {
-        const [rows] = await db.query(
-            `SELECT category_no, category_description, in_time, break_in, break_out, break_time_mins, type FROM category ORDER BY category_no`
-        );
-        const result = {
-            "fixed time": [],
-            "hourly based": []
-        };
-
-        rows.forEach(row => {
-            if (row.type === 'fixed') {
-                result["fixed time"].push({
-                    categoryNo: row.category_no,
-                    categoryDescription: row.category_description,
-                    inTime: row.in_time,
-                    breakIn: row.break_in,
-                    breakOut: row.break_out,
-                    breakTimeMins: row.break_time_mins,
-                   
-                });
-            } else if (row.type === 'hrs') {
-                result["hourly based"].push({
-                    categoryNo: row.category_no,
-                    categoryDescription: row.category_description,
-                    inTime: row.in_time,
-                    outTime: row.out_time,
-                });
-            }
-        });
-
-        res.json(result);
-    } catch (err) {
-        res.status(500).json({ error: err.message || 'Failed to fetch categories' });
-    }
-});
 
 module.exports = router;
