@@ -1,9 +1,10 @@
 const bcrypt = require('bcryptjs');
 
-const password = '1234';
+async function password(password){
 const saltRounds = 10;
 
-bcrypt.hash(password, saltRounds, function (err, hash) {
-    if (err) throw err;
-    console.log('Hashed password:', hash);
-});
+const hash = await bcrypt.hash(password, saltRounds);
+console.log('Hashed password:', hash);
+return hash;
+}
+module.exports = password;

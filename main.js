@@ -20,7 +20,9 @@ app.use(cookieParser());
 
 const loginRouter = require("./routes/login");
 const attendanceRouter = require("./routes/attendance");
+const esslFunctionsRouter = require("./routes/essl_functions");
 
+app.use("/api", esslFunctionsRouter);
 app.use("/api", loginRouter);
 app.use("/api", attendanceRouter);
 // const bcrypt = require('bcryptjs');

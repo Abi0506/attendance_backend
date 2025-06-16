@@ -222,4 +222,41 @@ router.post('/individual_data', async (req, res) => {
   }
 });
 
+router.post('/show_category', async (req, res) => {
+    try {
+        const [rows] = await db.query(
+            `SELECT category_no, category_description, in_time, break_in, break_out, break_time_mins, type FROM category ORDER BY category_no`
+        );
+        const result = {
+            "fixed time": [],
+            "hourly based": []
+        };
+
+        rows.forEach(row => {
+            if (row.type === 'fixed') {
+                result["fixed time"].push({
+                    categoryNo: row.category_no,
+                    categoryDescription: row.category_description,
+                    inTime: row.in_time,
+                    breakIn: row.break_in,
+                    breakOut: row.break_out,
+                    breakTimeMins: row.break_time_mins,
+                   
+                });
+            } else if (row.type === 'hrs') {
+                result["hourly based"].push({
+                    categoryNo: row.category_no,
+                    categoryDescription: row.category_description,
+                    inTime: row.in_time,
+                    outTime: row.out_time,
+                });
+            }
+        });
+
+        res.json(result);
+    } catch (err) {
+        res.status(500).json({ error: err.message || 'Failed to fetch categories' });
+    }
+});
+
 module.exports = router;
