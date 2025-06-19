@@ -161,8 +161,6 @@ router.post('/dept_summary', async (req, res) => {
     res.status(500).json({ error: "Internal Server Error" });
   }
 });
-
-
 router.post('/individual_data', async (req, res) => {
   function parseTimeToMinutes(timeStr) {
     const [hours, minutes] = timeStr.split(":").map(Number);
@@ -202,10 +200,16 @@ router.post('/individual_data', async (req, res) => {
       WHERE staff_id = ? AND date BETWEEN ? AND ?
     `, [id, start, end]);
 
+    // Get filtered late minutes (between start_date and end_date)
+    let [filtered_late_mins] = await db.query(`
+      SELECT SUM(late_mins) AS filtered_late_mins
+      FROM report
+      WHERE staff_id = ? AND date BETWEEN ? AND ?
+    `, [id, start_date, end_date]);
+
     if (!staffInfo.length) return res.status(404).json({ error: 'Staff member not found.' });
     if (!rows.length) return res.status(404).json({ error: 'No attendance records found for the given date range.' });
 
-    
     const groupedByDate = {};
     for (const row of rows) {
       if (!groupedByDate[row.date]) groupedByDate[row.date] = [];
@@ -234,11 +238,13 @@ router.post('/individual_data', async (req, res) => {
     }
 
     total_late_mins = total_late_mins[0]?.total_late_mins || 0;
+    filtered_late_mins = filtered_late_mins[0]?.filtered_late_mins || 0;
     const [absent_marked1] = absent_marked(total_late_mins);
 
     res.json({
       absent_marked: absent_marked1,
       total_late_mins: total_late_mins,
+      filtered_late_mins: filtered_late_mins,
       timing: result,
       data: staffInfo
     });
