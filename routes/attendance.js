@@ -134,7 +134,7 @@ router.post('/dept_summary', async (req, res) => {
         result[dept].push({ ...rest, summary: num1, leaves });
       }
     } else if (dept && dept !== "ALL") {
-      
+
       [rows] = await db.query(`
         SELECT staff.staff_id, staff.name, staff.dept, 
                SUM(report.late_mins) AS summary
@@ -255,104 +255,110 @@ router.post('/individual_data', async (req, res) => {
 });
 
 
-
-
-
 router.post('/applyExemption', async (req, res) => {
-    const {
+  let { exemptionType, staffId, exemptionSession, exemptionDate, exemptionReason, otherReason, start_time, end_time, exemptionStatus } = req.body; let name = '';
+
+  try {
+    const [staffRows] = await db.query('SELECT name FROM staff WHERE staff_id = ?', [staffId]);
+    if (staffRows.length === 0) {
+      return res.status(400).json({ message: "Staff ID does not exist" });
+    }
+    name = staffRows[0].name;
+  } catch (error) {
+    return res.status(500).json({ message: "Failed to add exemption" });
+  }
+
+  if (exemptionSession.length === 0) {
+    exemptionSession = null;
+  }
+  try {
+    await db.query(
+      `INSERT INTO exemptions 
+            (exemptionType, staffId, exemptionStaffName, exemptionSession, exemptionDate, exemptionReason, otherReason, start_time, end_time,exemptionStatus) 
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+      [
         exemptionType,
-        staffId, 
-        exemptionSession,
+        staffId,
+        name,
+        Array.isArray(exemptionSession) ? exemptionSession.join(',') : exemptionSession,
         exemptionDate,
         exemptionReason,
         otherReason,
         start_time,
-        end_time
-    } = req.body;
-    let name = '';
-    try {
-        const [staffRows] = await db.query('SELECT name FROM staff WHERE staff_id = ?', [staffId]);
-        if (staffRows.length === 0) {
-            return res.status(400).json({ message: "Staff ID does not exist" });
-        }
-        name = staffRows[0].name;
-    } catch (error) {
-        return res.status(500).json({ message: "Failed to add exemption" });
-    }
-    try {
-        await db.query(
-            `INSERT INTO exemptions 
-            (exemptionType, staffId, exemptionStaffName, exemptionSession, exemptionDate, exemptionReason, otherReason, start_time, end_time) 
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-            [
-                exemptionType,
-                staffId,
-                name,
-                Array.isArray(exemptionSession) ? exemptionSession.join(',') : exemptionSession,
-                exemptionDate,
-                exemptionReason,
-                otherReason,
-                start_time,
-                end_time
-            ]
-        );
-        res.json({ message: "Exemption added successfully" });
-    } catch (err) {
-        res.status(500).json({ message: "Failed to add exemption" });
-    }
+        end_time,
+        exemptionStatus
+      ]
+    );
+    res.json({ message: "Exemption added successfully" });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to add exemption" });
+  }
 });
 
 router.get('/hr_exemptions_all', async (req, res) => {
-    try {
-        const [rows] = await db.query('SELECT * FROM exemptions  ORDER BY exemptionDate DESC');
-        res.json({ message: "Exemptions fetched successfully", exemptions: rows });
-    } catch (err) {
-        res.status(500).json({ message: "Failed to fetch exemptions" });
-    }
+  try {
+    const [rows] = await db.query('SELECT * FROM exemptions  ORDER BY exemptionDate DESC');
+    res.json({ message: "Exemptions fetched successfully", exemptions: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch exemptions" });
+  }
+});
+router.get("/staff_exemptions/:staffId", async (req, res) => {
+  const { staffId } = req.params;
+  try {
+    const [rows] = await db.query('SELECT * FROM exemptions WHERE staffId = ? ORDER BY exemptionDate DESC', [staffId]);
+    res.json({ message: "Exemptions fetched successfully", exemptions: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch exemptions" });
+  }
 });
 
-
 router.post('/hr_exemptions/approve', async (req, res) => {
-    const { staffId, date, selectedSessions } = req.body;
-   
-    try {
-        let sql = 'UPDATE exemptions SET exemptionStatus = "approved" WHERE staffId = ? AND exemptionDate = ?';
-        let params = [staffId, date];
-        if (selectedSessions && selectedSessions.length > 0) {
-            sql += ' AND exemptionSession = ?';
-            params.push(String(selectedSessions.join(',')));
-        }
-        
-        const [result] = await db.query(sql, params);
-        if (result.affectedRows > 0) {
-            res.json({ message: "Exemption approved successfully" });
-        } else {
-            res.json({ message: "No matching exemption found" });
-        }
-    } catch (err) {
-        res.status(500).json({ message: "Failed to approve exemption" });
+  const { exemptionId } = req.body;
+
+  try {
+    let sql = 'UPDATE exemptions SET exemptionStatus = "approved" WHERE exemptionId = ?';
+    let params = [exemptionId];
+
+    const [result] = await db.query(sql, params);
+    if (result.affectedRows > 0) {
+      res.json({ message: "Exemption approved successfully" });
+    } else {
+      res.json({ message: "No matching exemption found" });
     }
+  } catch (err) {
+    res.status(500).json({ message: "Failed to approve exemption" });
+  }
 });
 
 
 router.post('/hr_exemptions/reject', async (req, res) => {
-    const { staffId, date, selectedSessions } = req.body;
-    try {
-        let sql = 'UPDATE exemptions SET exemptionStatus = "rejected" WHERE staffId = ? AND exemptionDate = ?';
-        let params = [staffId, date];
-        if (selectedSessions && selectedSessions.length > 0) {
-            sql += ' AND exemptionSession = ?';
-            params.push(selectedSessions.join(','));
-        }
-        const [result] = await db.query(sql, params);
-        if (result.affectedRows > 0) {
-            res.json({ message: "Exemption rejected successfully" });
-        } else {
-            res.json({ message: "No matching exemption found" });
-        }
-    } catch (err) {
-        res.status(500).json({ message: "Failed to reject exemption" });
+  const { exemptionId } = req.body;
+  try {
+    let sql = 'UPDATE exemptions SET exemptionStatus = "rejected" WHERE exemptionId = ?';
+    let params = [exemptionId];
+    const [result] = await db.query(sql, params);
+    if (result.affectedRows > 0) {
+      res.json({ message: "Exemption rejected successfully" });
+    } else {
+      res.json({ message: "No matching exemption found" });
     }
+  } catch (err) {
+    res.status(500).json({ message: "Failed to reject exemption" });
+  }
+});
+
+router.post("/search/getuser", async (req, res) => {
+  const { staffId } = req.body;
+  try {
+    const [rows] = await db.query('SELECT * FROM staff WHERE staff_id = ?', [staffId]);
+    if (rows.length === 0) {
+      return res.status(404).json({ message: "Staff not found" });
+    }
+    res.json({ message: "Staff fetched successfully", staff: rows[0] });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch staff" });
+  }
 });
 
 module.exports = router;
