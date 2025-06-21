@@ -3,9 +3,9 @@ const router = express.Router();
 const db = require('../db');
 const password = require('./passWord');
 const { exec } = require('child_process');
-const path = require('path');
+require('dotenv').config();
+const scriptPath = process.env.PYTHON_SCRIPT_PATH;
 
-const scriptPath = path.join('C:', 'Users', 'lenovo', 'Desktop', 'FaceMachine', 'essl_functions.py');
 
 function runPythonScript(args) {
   return new Promise((resolve, reject) => {
@@ -35,7 +35,7 @@ router.post('/add_user', async (req, res) => {
       throw new Error(pythonResult);
     }
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ success: false, error: err.message });
   }
 
   try {
@@ -61,9 +61,9 @@ router.post('/add_user', async (req, res) => {
       `INSERT INTO STAFF (staff_id, name, dept, designation, password, category) VALUES (?, ?, ?, ?, ?, ?)`,
       [id, name, dept, designation, hashedPassword, category_no]
     );
-    res.status(200).json({ message: `User ${id} added successfully` });
+    res.status(200).json({ success: true, message: `User added successfully` });
   } catch (err) {
-    res.status(500).json({ error: 'Database error' });
+    res.status(500).json({ success: false, message: 'Database error' });
   }
 });
 
