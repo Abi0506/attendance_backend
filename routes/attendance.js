@@ -254,7 +254,6 @@ router.post('/individual_data', async (req, res) => {
   }
 });
 
-
 router.post('/applyExemption', async (req, res) => {
   let { exemptionType, staffId, exemptionSession, exemptionDate, exemptionReason, otherReason, start_time, end_time, exemptionStatus } = req.body; let name = '';
 
@@ -360,6 +359,15 @@ router.post("/search/getuser", async (req, res) => {
     res.status(500).json({ message: "Failed to fetch staff" });
   }
 });
+
+router.get("/categories", async (req, res) => {
+  try {
+    const [rows] = await db.query("select * from category");
+    res.json({ message: "Categories fetched successfully", success: true, categories: rows });
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch categories", })
+  }
+})
 
 module.exports = router;
 
