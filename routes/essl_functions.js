@@ -18,14 +18,16 @@ function runPythonScript(args) {
 
 router.post('/add_user', async (req, res) => {
   let { id, name, dept, category, designation, staff_type, intime, outtime, breakmins, breakin, breakout } = req.body;
-  // try {
-  //   const pythonResult = await runPythonScript(['set_user_credentials', id, name]);
-  //   if (pythonResult.includes('Error')) {
-  //     throw new Error(pythonResult);
-  //   }
-  // } catch (err) {
-  //   return res.status(500).json({ success: false, error: err.message });
-  // }
+
+  // First add to device and then add to the db
+  try {
+    const pythonResult = await runPythonScript(['set_user_credentials', id, name]);
+    if (pythonResult.includes('Error')) {
+      throw new Error(pythonResult);
+    }
+  } catch (err) {
+    return res.status(500).json({ success: false, error: err.message });
+  }
 
   console.log("Category: ", category)
   if (category === -1) {
