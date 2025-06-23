@@ -208,7 +208,6 @@ router.post('/individual_data', async (req, res) => {
     `, [id, start_date, end_date]);
 
     if (!staffInfo.length) return res.status(404).json({ error: 'Staff member not found.' });
-    if (!rows.length) return res.status(404).json({ error: 'No attendance records found for the given date range.' });
 
     const groupedByDate = {};
     for (const row of rows) {
@@ -225,8 +224,8 @@ router.post('/individual_data', async (req, res) => {
         const inTime = times[i * 2] || null;
         const outTime = times[i * 2 + 1] || null;
         row[`IN${i + 1}`] = inTime;
-        row[`OUT${i + 1}`] = outTime || (inTime ? "Invalid" : null);
-        if (inTime && outTime && outTime !== "Invalid") {
+        row[`OUT${i + 1}`] = outTime || (inTime ? "---" : null);
+        if (inTime && outTime && outTime !== "---") {
           const inMin = parseTimeToMinutes(inTime);
           const outMin = parseTimeToMinutes(outTime);
           if (outMin > inMin) totalMinutes += (outMin - inMin);

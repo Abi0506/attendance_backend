@@ -17,52 +17,40 @@ function runPythonScript(args) {
 }
 
 router.post('/add_user', async (req, res) => {
-  let { id, name, dept, designation, staff_type, working_type, intime, outtime, breakmins, breakin, breakout } = req.body;
+  let { id, name, dept, category, designation, staff_type, intime, outtime, breakmins, breakin, breakout } = req.body;
+  // try {
+  //   const pythonResult = await runPythonScript(['set_user_credentials', id, name]);
+  //   if (pythonResult.includes('Error')) {
+  //     throw new Error(pythonResult);
+  //   }
+  // } catch (err) {
+  //   return res.status(500).json({ success: false, error: err.message });
+  // }
 
-  if (!/^[A-Za-z]\d+$/.test(id)) {
-    return res.status(400).json({ error: 'Invalid ID format' });
-  }
-
-  intime = intime ? `${intime}:00` : null;
-  outtime = outtime ? `${outtime}:00` : null;
-  breakmins = breakmins || null;
-  breakin = breakin ? `${breakin}:00` : null;
-  breakout = breakout ? `${breakout}:00` : null;
-
-  try {
-    const pythonResult = await runPythonScript(['set_user_credentials', id, name]);
-    if (pythonResult.includes('Error')) {
-      throw new Error(pythonResult);
-    }
-  } catch (err) {
-    return res.status(500).json({ success: false, error: err.message });
-  }
-
-  try {
-    let [rows] = await db.query(
-      `SELECT * FROM category WHERE category_description = ? AND in_time = ? AND out_time = ? AND break_in = ? AND break_out = ? AND type = ? AND break_time_mins = ?`,
-      [staff_type, intime, outtime, breakin, breakout, working_type, breakmins]
-    );
-
-    let category_no;
-    if (rows.length === 0) {
+  console.log("Category: ", category)
+  if (category === -1) {
+    console.log("Custom Category processing")
+    try {
       const [insertResult] = await db.query(
-        `INSERT INTO category (category_description, in_time, out_time, break_in, break_out, type, break_time_mins) VALUES (?, ?, ?, ?, ?, ?, ?)`,
-        [staff_type, intime, outtime, breakin, breakout, working_type, breakmins]
+        `INSERT INTO category (category_description, in_time, out_time, break_in, break_out, break_time_mins) VALUES (?, ?, ?, ?, ?, ?, ?)`,
+        [staff_type, intime, outtime, breakin, breakout, breakmins]
       );
-      category_no = insertResult.insertId;
-    } else {
-      category_no = rows[0].category_no;
+      category = insertResult.insertId;
+    } catch (err) {
+      res.status(500).json({ success: false, message: 'Database error' });
     }
-
-    const plainPassword = name;
+  }
+  try {
+    const plainPassword = id;
     const hashedPassword = await password(plainPassword);
+    console.log(category)
     await db.query(
-      `INSERT INTO STAFF (staff_id, name, dept, designation, password, category) VALUES (?, ?, ?, ?, ?, ?)`,
-      [id, name, dept, designation, hashedPassword, category_no]
+      `INSERT INTO STAFF (staff_id, name, dept, category, password, designation) VALUES (?, ?, ?, ?, ?, ?)`,
+      [id, name, dept, category, hashedPassword, designation]
     );
     res.status(200).json({ success: true, message: `User added successfully` });
   } catch (err) {
+    console.error(err)
     res.status(500).json({ success: false, message: 'Database error' });
   }
 });
