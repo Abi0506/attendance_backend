@@ -368,5 +368,39 @@ router.get("/categories", async (req, res) => {
   }
 })
 
+router.get('/devices', async (req, res) => {
+  try {
+    const [rows] = await db.query('SELECT * FROM devices');
+    res.json({ message: "Devices fetched successfully", success: true, devices: rows });
+  } catch (err) {
+    console.error("Error fetching devices:", err);
+    res.status(500).json({ message: "Failed to fetch devices" });
+  }
+});
+
+router.post('/devices/add', async (req, res) => {
+  const { ip_address, device_name, device_location, image_url } = req.body;
+  console.log("Adding device:", ip_address, device_name, device_location, image_url);
+  try {
+    await db.query('INSERT INTO devices (ip_address, device_name, device_location, image_url) VALUES (?, ?, ?, ?)', [ip_address, device_name, device_location, image_url]);
+    res.json({ message: "Device added successfully", success: true });
+  } catch (err) {
+    console.error("Error adding device:", err);
+    res.status(500).json({ message: "Failed to add device" });
+  }
+});
+
+router.post('/devices/update', async (req, res) => {
+  const { id, ip_address, device_name, device_location, image_url } = req.body;
+  console.log("Updating device:", id, ip_address, device_name, device_location, image_url);
+  try {
+    await db.query('UPDATE devices SET ip_address = ?, device_name = ?, device_location = ?, image_url = ? WHERE device_id = ?', [ip_address, device_name, device_location, image_url, id]);
+    res.json({ message: "Device updated successfully", success: true });
+  } catch (err) {
+    console.error("Error updating device:", err);
+    res.status(500).json({ message: "Failed to update device" });
+  }
+});
+
 module.exports = router;
 
