@@ -1,12 +1,12 @@
 // db.js
-require('dotenv').config();
-const mysql = require('mysql2/promise'); 
+const mysql = require('mysql2/promise');
 
 const pool = mysql.createPool({
-  host: process.env.DB_HOST,
-  user: process.env.DB_USER,
-  password: process.env.DB_PASS,
-  database: process.env.DB_NAME,
+  host: 'sql304.infinityfree.com',
+  user: 'if0_39320826',
+  password: 'Cookies@12', // Replace with your actual password
+  database: 'if0_39320826_faculty_data_logs',
+  port: 3306,
   dateStrings: true,
   waitForConnections: true,
   connectionLimit: 10,

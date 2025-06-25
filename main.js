@@ -4,9 +4,8 @@ const cookieParser = require('cookie-parser');
 const cors = require("cors");
 const app = express();
 
-const PORT = 5000;
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: true, // Allow all origins for testing; restrict in production
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -26,7 +25,5 @@ app.use("/api", esslFunctionsRouter);
 app.use("/api", loginRouter);
 app.use("/api", attendanceRouter);
 
-
-app.listen(PORT,'0.0.0.0', () => {
-  console.log(`🚀 Server running at http://localhost:${PORT}`);
-});
+// Export the app for Vercel serverless deployment
+module.exports = app;
