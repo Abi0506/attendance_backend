@@ -378,6 +378,58 @@ router.get('/devices', async (req, res) => {
   }
 });
 
+router.post("/add_categories", async (req, res) => {
+  const { category_description , in_time,break_in,break_out,out_time,break_time_mins } = req.body;
+  
+    
+  try {
+    
+    
+    
+    function addSeconds(time) {
+      if (typeof time === "string" && time.length === 5 && /^\d{2}:\d{2}$/.test(time)) {
+      return time + ":00";
+      }
+      return time;
+    }
+
+    let in_time1 = addSeconds(in_time);
+    let break_in1 = addSeconds(break_in);
+    let break_out1 = addSeconds(break_out);
+    let out_time1 = addSeconds(out_time);
+
+
+    const [rows] = await db.query("SELECT * FROM category");
+    const exists = rows.some(cat =>
+      cat.category_description === category_description &&
+      cat.in_time === in_time1 &&
+      cat.break_in === break_in1 &&
+      cat.break_out === break_out1 &&
+      cat.out_time === out_time1 &&
+      cat.break_time_mins === break_time_mins
+    );
+
+    if (!exists) {
+      return res.status(400).json({ message: "Category already exists" });
+    } else {
+      await db.query(
+      "INSERT INTO category (category_description, in_time, break_in, break_out, out_time, break_time_mins) VALUES (?, ?, ?, ?, ?, ?)",
+      [
+        category_description,
+        in_time1,
+        break_in1,
+        break_out1,
+        out_time1,
+        break_time_mins
+      ]
+      );
+      res.json({ message: "Category added successfully", success: true });
+    }
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch categories", })
+  }
+});
+
 router.post('/devices/add', async (req, res) => {
   const { ip_address, device_name, device_location, image_url } = req.body;
   console.log("Adding device:", ip_address, device_name, device_location, image_url);
