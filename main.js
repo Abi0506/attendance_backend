@@ -6,7 +6,7 @@ const app = express();
 
 const PORT = 5000;
 const corsOptions = {
-  origin: 'http://localhost:3000',
+  origin: ['http://localhost:3000', 'https://dcc3n94j-3000.inc1.devtunnels.ms'],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization']
@@ -27,6 +27,6 @@ app.use("/api", loginRouter);
 app.use("/api", attendanceRouter);
 
 
-app.listen(PORT,'0.0.0.0', () => {
+app.listen(PORT, '0.0.0.0', () => {
   console.log(`🚀 Server running at http://localhost:${PORT}`);
 });

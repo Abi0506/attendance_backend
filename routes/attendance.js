@@ -321,8 +321,12 @@ router.post('/hr_exemptions/approve', async (req, res) => {
     const [result] = await db.query(sql, params);
     if (result.affectedRows > 0) {
       res.json({ message: "Exemption approved successfully" });
-      try{
+      try {
         let sql1 = 'SELECT '
+      }
+      catch {
+        console.error("Error fetching approved exemption details:", error);
+        res.status(500).json({ message: "Failed to fetch approved exemption details" });
       }
     } else {
       res.json({ message: "No matching exemption found" });
@@ -382,16 +386,16 @@ router.get('/devices', async (req, res) => {
 });
 
 router.post("/add_categories", async (req, res) => {
-  const { category_description , in_time,break_in,break_out,out_time,break_time_mins } = req.body;
-  
-    
+  const { category_description, in_time, break_in, break_out, out_time, break_time_mins } = req.body;
+
+
   try {
-    
-    
-    
+
+
+
     function addSeconds(time) {
       if (typeof time === "string" && time.length === 5 && /^\d{2}:\d{2}$/.test(time)) {
-      return time + ":00";
+        return time + ":00";
       }
       return time;
     }
@@ -417,15 +421,15 @@ router.post("/add_categories", async (req, res) => {
       return res.status(400).json({ message: "Category already exists" });
     } else {
       await db.query(
-      "INSERT INTO category (category_description, in_time, break_in, break_out, out_time, break_time_mins) VALUES (?, ?, ?, ?, ?, ?)",
-      [
-        category_description,
-        in_time1,
-        break_in1,
-        break_out1,
-        out_time1,
-        break_time_mins
-      ]
+        "INSERT INTO category (category_description, in_time, break_in, break_out, out_time, break_time_mins) VALUES (?, ?, ?, ?, ?, ?)",
+        [
+          category_description,
+          in_time1,
+          break_in1,
+          break_out1,
+          out_time1,
+          break_time_mins
+        ]
       );
       res.json({ message: "Category added successfully", success: true });
     }
@@ -436,7 +440,9 @@ router.post("/add_categories", async (req, res) => {
 
 router.post('/devices/add', async (req, res) => {
   const { ip_address, device_name, device_location, image_url } = req.body;
-  console.log("Adding device:", ip_address, device_name, device_location, image_url);
+  if (image_url === undefined || image_url === null) {
+    image_url = "https://5.imimg.com/data5/SELLER/Default/2021/8/YO/BR/DA/5651309/essl-ai-face-venus-face-attendance-system-with-artificial-intelligence-500x500.jpg";
+  }
   try {
     await db.query('INSERT INTO devices (ip_address, device_name, device_location, image_url) VALUES (?, ?, ?, ?)', [ip_address, device_name, device_location, image_url]);
     res.json({ message: "Device added successfully", success: true });
@@ -447,8 +453,10 @@ router.post('/devices/add', async (req, res) => {
 });
 
 router.post('/devices/update', async (req, res) => {
-  const { id, ip_address, device_name, device_location, image_url } = req.body;
-  console.log("Updating device:", id, ip_address, device_name, device_location, image_url);
+  let { id, ip_address, device_name, device_location, image_url } = req.body;
+  if (image_url === undefined || image_url === null || image_url === "") {
+    image_url = "https://5.imimg.com/data5/SELLER/Default/2021/8/YO/BR/DA/5651309/essl-ai-face-venus-face-attendance-system-with-artificial-intelligence-500x500.jpg";
+  }
   try {
     await db.query('UPDATE devices SET ip_address = ?, device_name = ?, device_location = ?, image_url = ? WHERE device_id = ?', [ip_address, device_name, device_location, image_url, id]);
     res.json({ message: "Device updated successfully", success: true });
@@ -461,7 +469,7 @@ router.post('/devices/update', async (req, res) => {
 router.get('/get_user/:id', async (req, res) => {
   const { id } = req.params;
   try {
-      const [rows] = await db.query(`
+    const [rows] = await db.query(`
           SELECT 
             staff.staff_id,
             staff.name,
@@ -478,7 +486,7 @@ router.get('/get_user/:id', async (req, res) => {
           JOIN category ON staff.category = category.category_no
           WHERE staff.staff_id = ?
         `, [id]);
- if (rows.length === 0) {
+    if (rows.length === 0) {
       return res.json({ success: false, message: 'User not found' });
     }
     res.json({ success: true, user: rows[0] });

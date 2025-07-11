@@ -9,6 +9,7 @@ const db = require('../db');
 
 
 router.post('/login', async (req, res) => {
+  console.log("Login request received");
   const { userId, password } = req.body;
   const [rows] = await db.query('SELECT staff_id, password,designation FROM staff WHERE staff_id = ?', [userId]);
   const user = rows[0];
