@@ -441,7 +441,7 @@ router.post("/add_categories", async (req, res) => {
 
 router.post('/devices/add', async (req, res) => {
   const { ip_address, device_name, device_location, image_url } = req.body;
-  if (image_url === undefined || image_url === null) {
+  if (image_url === undefined || image_url === "") {
     image_url = "https://5.imimg.com/data5/SELLER/Default/2021/8/YO/BR/DA/5651309/essl-ai-face-venus-face-attendance-system-with-artificial-intelligence-500x500.jpg";
   }
   try {
