@@ -321,6 +321,9 @@ router.post('/hr_exemptions/approve', async (req, res) => {
     const [result] = await db.query(sql, params);
     if (result.affectedRows > 0) {
       res.json({ message: "Exemption approved successfully" });
+      try{
+        let sql1 = 'SELECT '
+      }
     } else {
       res.json({ message: "No matching exemption found" });
     }
@@ -401,15 +404,16 @@ router.post("/add_categories", async (req, res) => {
 
     const [rows] = await db.query("SELECT * FROM category");
     const exists = rows.some(cat =>
-      cat.category_description === category_description &&
-      cat.in_time === in_time1 &&
-      cat.break_in === break_in1 &&
-      cat.break_out === break_out1 &&
-      cat.out_time === out_time1 &&
-      cat.break_time_mins === break_time_mins
+      String(cat.category_description) === String(category_description) &&
+      String(cat.in_time) === String(in_time1) &&
+      String(cat.break_in) === String(break_in1) &&
+      String(cat.break_out) === String(break_out1) &&
+      String(cat.out_time) === String(out_time1) &&
+      Number(cat.break_time_mins) === Number(break_time_mins)
     );
-
-    if (!exists) {
+    console.log(rows);
+    console.log(exists);
+    if (exists) {
       return res.status(400).json({ message: "Category already exists" });
     } else {
       await db.query(
@@ -453,6 +457,38 @@ router.post('/devices/update', async (req, res) => {
     res.status(500).json({ message: "Failed to update device" });
   }
 });
+
+router.get('/get_user/:id', async (req, res) => {
+  const { id } = req.params;
+  try {
+      const [rows] = await db.query(`
+          SELECT 
+            staff.staff_id,
+            staff.name,
+            staff.dept,
+            staff.designation,
+            staff.category,
+            category.category_description,
+            category.in_time,
+            category.out_time,
+            category.break_in,
+            category.break_out,
+            category.break_time_mins
+          FROM staff
+          JOIN category ON staff.category = category.category_no
+          WHERE staff.staff_id = ?
+        `, [id]);
+ if (rows.length === 0) {
+      return res.json({ success: false, message: 'User not found' });
+    }
+    res.json({ success: true, user: rows[0] });
+  } catch (err) {
+    console.error('Fetch user error:', err);
+    res.status(500).json({ success: false, message: 'Failed to get user' });
+  }
+});
+
+
 
 module.exports = router;
 
