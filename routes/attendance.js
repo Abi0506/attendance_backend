@@ -321,6 +321,7 @@ router.post('/hr_exemptions/approve', async (req, res) => {
     const [result] = await db.query(sql, params);
     if (result.affectedRows > 0) {
       res.json({ message: "Exemption approved successfully" });
+
       try {
         let sql1 = 'SELECT '
       }
